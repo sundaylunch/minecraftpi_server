@@ -7,6 +7,7 @@ from flask import jsonify
 from flask_cors import CORS
 from mcpi import minecraft
 
+HOST="localhost"
 
 mc = None
 app = Flask(__name__)
@@ -19,40 +20,47 @@ def try_to_connect():
     while mc == None:
         try:
             tries+=1
-            mc = minecraft.Minecraft.create()
-            print("Connected to "+mc)
-            return True
+            print("Tring to connect to minecraft at {}".format(HOST))
+            mc = minecraft.Minecraft.create(HOST)
+            print("Connected to "+HOST)
+            message={"success": True, "msg":"Connected to {}".format(HOST)}
+            return message
         except:
             print("Failed to connect retry..")
             if tries<3:
                 continue
             else:
                 print("Failed to connect")
-                return False
-  
+                message={"success": False, "msg":"Failed to connect to {}".format(HOST)}
+                return message
 
+@app.route("/connect")
+def connect():
+     global mc, HOST
+     HOST = request.args.get("host", "localhost")
+     return jsonify(try_to_connect())
+    
 @app.route("/chat")
 def chat():
     global mc
     if mc==None:
-           if try_to_connect()==False:
-               message={"msg":"Failed to connect to minecraft at localhost"}
-               return jsonify(message)
+           resp=try_to_connect()
+           if resp["success"]==False:
+               return jsonify(resp)
            
     msg = request.args.get("msg", "Hello from scratcher!")
     mc.postToChat(msg)
-    message={"success": True, "msg":"chat posted to minecraft at localhost"}
+    message={"success": True, "msg":"chat posted to minecraft at {}".format(HOST)}
     return jsonify(message)
 
 @app.route("/getBlock")
 def getBlock():
     global mc
     if mc==None:
-           if try_to_connect()==False:
-               message={"msg":"Failed to connect to minecraft at localhost"}
-               return jsonify(message)
-    
-    
+           resp=try_to_connect()
+           if resp["success"]==False:
+               return jsonify(resp)
+   
     x=request.args.get("x")
     y=request.args.get("y")
     z=request.args.get("z")
@@ -69,5 +77,17 @@ def getBlock():
          message={"msg":"invalid co-ordinates"}
     return jsonify(message)
 
-
+@app.route("/getPos")
+def getPos():
+    global mc
+    if mc==None:
+           resp=try_to_connect()
+           if resp["success"]==False:
+               return jsonify(resp)
     
+    pos=mc.player.getPos()
+    print(f"Got pos as {pos}")
+    msgstr=f"Got pos as {pos.x} {pos.y} {pos.z}"
+    message={"msg":msgstr,"x":pos.x,"y":pos.y,"z":pos.z}
+
+    return jsonify(message)
