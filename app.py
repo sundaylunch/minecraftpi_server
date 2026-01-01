@@ -77,6 +77,31 @@ def getBlock():
          message={"msg":"invalid co-ordinates"}
     return jsonify(message)
 
+@app.route("/setPos")
+def setPos():
+    global mc
+    if mc==None:
+           resp=try_to_connect()
+           if resp["success"]==False:
+               return jsonify(resp)
+   
+    x=request.args.get("x")
+    y=request.args.get("y")
+    z=request.args.get("z")
+    
+    try:
+         x=float(x)
+         y=float(y)
+         z=float(z)
+
+         mc.player.setPos(x,y,z)
+         print(f"Move to {x}, {y}, {z}")
+         message={"msg":f"Move to {x}, {y}, {z}"}
+    except:
+         message={"msg":"invalid co-ordinates"}
+    return jsonify(message)
+
+
 @app.route("/getPos")
 def getPos():
     global mc
