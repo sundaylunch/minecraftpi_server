@@ -77,6 +77,33 @@ def getBlock():
          message={"msg":"invalid co-ordinates"}
     return jsonify(message)
 
+@app.route("/setBlock")
+def setBlock():
+    global mc
+    if mc==None:
+           resp=try_to_connect()
+           if resp["success"]==False:
+               return jsonify(resp)
+   
+    x=request.args.get("x")
+    y=request.args.get("y")
+    z=request.args.get("z")
+    block=request.args.get("block")
+    
+    try:
+         x=float(x)
+         y=float(y)
+         z=float(z)
+         block=int(block)
+
+         mc.setBlock(x,y,z,block)
+         print(f"set block at {x}, {y}, {z} as {block}")
+         message={"msg":f"set block at {x}, {y}, {z} as {block}"}
+    except:
+         message={"msg":"invalid co-ordinates"}
+    return jsonify(message)
+
+
 @app.route("/setPos")
 def setPos():
     global mc
