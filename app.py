@@ -8,6 +8,7 @@ from flask_cors import CORS
 from mcpi import minecraft
 
 HOST="localhost"
+DEBUG=True
 
 mc = None
 app = Flask(__name__)
@@ -38,25 +39,31 @@ def try_to_connect():
 def connect():
      global mc, HOST
      HOST = request.args.get("host", "localhost")
+     if DEBUG:
+          message={"success": True, "msg":"Connected to {}".format(HOST)}
+          return jsonify(message)
      return jsonify(try_to_connect())
     
 @app.route("/chat")
 def chat():
     global mc
-    if mc==None:
-           resp=try_to_connect()
-           if resp["success"]==False:
-               return jsonify(resp)
+    if not DEBUG:
+        if mc==None:
+               resp=try_to_connect()
+               if resp["success"]==False:
+                   return jsonify(resp)
            
     msg = request.args.get("msg", "Hello from scratcher!")
-    mc.postToChat(msg)
+    if not DEBUG:
+        mc.postToChat(msg)
     message={"success": True, "msg":"chat posted to minecraft at {}".format(HOST)}
     return jsonify(message)
 
 @app.route("/getBlock")
 def getBlock():
     global mc
-    if mc==None:
+
+    if mc==None and not DEBUG:
            resp=try_to_connect()
            if resp["success"]==False:
                return jsonify(resp)
@@ -70,7 +77,10 @@ def getBlock():
          y=float(y)
          z=float(z)
 
-         id=mc.getBlock(x,y,z)
+         if not DEBUG:
+             id=mc.getBlock(x,y,z)
+         else:
+             id=101    
          print(f"Got block at {x}, {y}, {z} as {id}")
          message={"id":id}
     except:
@@ -80,7 +90,7 @@ def getBlock():
 @app.route("/setBlock")
 def setBlock():
     global mc
-    if mc==None:
+    if mc==None and not DEBUG:
            resp=try_to_connect()
            if resp["success"]==False:
                return jsonify(resp)
@@ -89,25 +99,66 @@ def setBlock():
     y=request.args.get("y")
     z=request.args.get("z")
     block=request.args.get("block")
+    data=request.args.get("data")
     
     try:
          x=float(x)
          y=float(y)
          z=float(z)
          block=int(block)
+         data=int(data)
+         
+         if not DEBUG:
+             mc.setBlock(x,y,z,block,data)
+         print(f"set block at {x}, {y}, {z} as {block} with {data}")
+         message={"msg":f"set block at {x}, {y}, {z} as {block} with {data}"}
+    except Exception as e:
+         print(e)
+         message={"msg":"invalid request"}
+    return jsonify(message)
 
-         mc.setBlock(x,y,z,block)
-         print(f"set block at {x}, {y}, {z} as {block}")
-         message={"msg":f"set block at {x}, {y}, {z} as {block}"}
-    except:
-         message={"msg":"invalid co-ordinates"}
+@app.route("/setBlocks")
+def setBlocks():
+    global mc
+    if mc==None and not DEBUG:
+           resp=try_to_connect()
+           if resp["success"]==False:
+               return jsonify(resp)
+   
+    x=request.args.get("x")
+    y=request.args.get("y")
+    z=request.args.get("z")
+    block=request.args.get("block")
+    data=request.args.get("data")
+    x1=request.args.get("x1")
+    y1=request.args.get("y1")
+    z1=request.args.get("z1")
+    
+    
+    try:
+         x=float(x)
+         y=float(y)
+         z=float(z)
+         block=int(block)
+         data=int(data)
+         x1=float(x1)
+         y1=float(y1)
+         z1=float(z1)
+         
+         if not DEBUG:
+             mc.setBlocks(x,y,z,x1,y1,z1,block,data)
+         print(f"set block from {x}, {y}, {z} to {x1} {y1} {z1} as {block} with {data}")
+         message={"msg":f"set block from {x}, {y}, {z} to {x1} {y1} {z1} as {block} with {data}"}
+    except Exception as e:
+         print(e)
+         message={"msg":"invalid message"}
     return jsonify(message)
 
 
 @app.route("/setPos")
 def setPos():
     global mc
-    if mc==None:
+    if mc==None and not DEBUG:
            resp=try_to_connect()
            if resp["success"]==False:
                return jsonify(resp)
@@ -120,8 +171,9 @@ def setPos():
          x=float(x)
          y=float(y)
          z=float(z)
-
-         mc.player.setPos(x,y,z)
+         
+         if not DEBUG:
+             mc.player.setPos(x,y,z)
          print(f"Move to {x}, {y}, {z}")
          message={"msg":f"Move to {x}, {y}, {z}"}
     except:
@@ -132,12 +184,18 @@ def setPos():
 @app.route("/getPos")
 def getPos():
     global mc
-    if mc==None:
+    if mc==None and not DEBUG:
            resp=try_to_connect()
            if resp["success"]==False:
                return jsonify(resp)
     
-    pos=mc.player.getPos()
+    if not DEBUG:
+        pos=mc.player.getPos()
+    else:
+        pos.x=123
+        pos.y=111
+        pos.z=321
+        
     print(f"Got pos as {pos}")
     msgstr=f"Got pos as {pos.x} {pos.y} {pos.z}"
     message={"msg":msgstr,"x":pos.x,"y":pos.y,"z":pos.z}
