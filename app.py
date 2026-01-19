@@ -6,9 +6,13 @@ from flask import jsonify
 
 from flask_cors import CORS
 from mcpi import minecraft
+import sys
 
 HOST="localhost"
-DEBUG=True
+DEBUG=False
+
+if sys.argv[1]=="on":
+     DEBUG=True
 
 mc = None
 app = Flask(__name__)
@@ -55,8 +59,13 @@ def chat():
            
     msg = request.args.get("msg", "Hello from scratcher!")
     if not DEBUG:
-        mc.postToChat(msg)
-    message={"success": True, "msg":"chat posted to minecraft at {}".format(HOST)}
+        try:
+            mc.postToChat(msg)
+            message={"success": True, "msg":"chat posted to minecraft at {}".format(HOST)}
+        except:
+             mc=None
+             message={"success": False, "msg": "failed to connect to".format(HOST)}
+
     return jsonify(message)
 
 @app.route("/getBlock")
@@ -79,8 +88,14 @@ def getBlock():
 
          if not DEBUG:
              id=mc.getBlock(x,y,z)
+             print(id,type(id))
+             if id==35:
+                  blockdata=mc.getBlockWithData(x,y,z)
+                  print(blockdata)
+                  id=3500+blockdata.data
          else:
-             id=101    
+             id=101
+            
          print(f"Got block at {x}, {y}, {z} as {id}")
          message={"id":id}
     except:
